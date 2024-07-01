@@ -1,0 +1,47 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.filters-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    align-items: end;
+    gap: 8px;
+}
+
+.contact-form {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 16px;
+}
+
+.address-map {
+    height: 300px;
+    width: 374px;
+    margin-top: 24px;
+}
+
+.contact-description {
+    resize: none;
+    height: 230px;
+}

@@ -1,0 +1,60 @@
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Domain.AggregatesModel.ContactAggregate.Models.UpdateContact
+
+<form id="createContactForm" onsubmit="saveContact(event)">
+    <div class="contact-form">
+        <div class="w-100">
+            <input type="hidden" value="@Model.Id" asp-for="Id"/>
+            <div class="form-group">
+                <label asp-for="FirstName" class="control-label">First Name</label>
+                <input asp-for="FirstName" value="@Model.FirstName" type="text" class="form-control" id="FirstName" name="FirstName"/>
+                <span asp-validation-for="FirstName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LastName" class="control-label">Last Name</label>
+                <input asp-for="LastName" value="@Model.LastName" type="text" class="form-control" id="LastName" name="LastName"/>
+                <span asp-validation-for="LastName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PhoneNumber" class="control-label">Phone Number</label>
+                <input asp-for="PhoneNumber" value="@Model.PhoneNumber" type="text" class="form-control" id="PhoneNumber" name="PhoneNumber"/>
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Email" class="control-label">Email</label>
+                <input asp-for="Email" type="email" class="form-control" id="Email" name="Email" value="@Model.Email"/>
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description" class="control-label">Description</label>
+                <textarea asp-for="Description" class="form-control contact-description" id="Description" name="Description" value="@Model.Description">
+                        </textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="w-100">
+            <div class="form-group">
+                <label asp-for="AddressName" class="control-label">Address</label>
+                <input asp-for="AddressName" class="form-control" id="AddressName" name="AddressName" value="@Model.AddressName"/>
+                <span asp-validation-for="AddressName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AddressLongitude" class="control-label">Address Longitude</label>
+                <input asp-for="AddressLongitude" onchange="latitudeAndLongitudeChanged()" class="form-control" id="AddressLongitude" name="AddressLongitude" value="@Model.AddressLongitude"/>
+                <span asp-validation-for="AddressLongitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AddressLatitude" class="control-label">Address Latitude</label>
+                <input asp-for="AddressLatitude" onchange="latitudeAndLongitudeChanged()" class="form-control" id="AddressLatitude" name="AddressLatitude" value="@Model.AddressLatitude"/>
+                <span asp-validation-for="AddressLatitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <div id="address-map" class="address-map"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>
