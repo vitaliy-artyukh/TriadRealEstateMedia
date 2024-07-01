@@ -1,0 +1,281 @@
+﻿@{
+    ViewData["Title"] = "Contacts";
+}
+<h1>Contacts</h1>
+<div>
+    <div class="filters-wrapper">
+        <div>
+            <label for="firstNameFilter" class="control-label">First Name</label>
+            <input type="text" class="form-control" id="firstNameFilter"/>
+        </div>
+        <div>
+            <label for="lastNameFilter" class="control-label">Last Name</label>
+            <input type="text" class="form-control" id="lastNameFilter"/>
+        </div>
+        <div>
+            <label for="emailFilter" class="control-label">Email</label>
+            <input type="text" class="form-control" id="emailFilter"/>
+        </div>
+        <div>
+            <label for="phoneNumberFilter" class="control-label">Phone Number</label>
+            <input type="text" class="form-control" id="phoneNumberFilter"/>
+        </div>
+        <div>
+             <button onclick="loadContacts()" class="btn btn-primary">Search</button>
+        </div>
+        <div></div>
+    </div>
+</div>
+<p class="mt-1 text-end">
+    <button onclick="openCreateModal()" class="btn btn-primary">Create Contact</button>
+</p>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Phone Number</th>
+        <th>Email</th>
+        <th>Description</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="contactsTableBody">
+    </tbody>
+</table>
+
+<div class="modal" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editContactModalLabel">Create Contact</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" data-id="" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Delete contact</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="delete-modal-body">
+                Are you sure you want to delete this?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="deleteContact()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var map;
+        $(document).ready(function () {
+            loadContacts();
+        });
+        
+        /**
+         * Prevents the default form submission.
+         * Sends a POST request to save the contact data via AJAX.
+         * Hides the modal and reloads the contacts on success.
+         * Displays an error message in the modal body on failure.
+         */
+        function saveContact(event) {
+            event.preventDefault();
+             $.ajax({
+                url: `@Url.Action("Save", "Contacts")`,
+                type: 'POST',
+                data: $(event.target).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        $('#editContactModal').modal('hide');
+                        loadContacts();                        
+                    } else {
+                        $('#editContactModal .modal-body').html(data);
+                    }
+                },
+                error: function (error) {
+                    console.error('Error creating contact:', error);
+                }
+            });
+        }
+        
+        /**
+         * Opens the modal for creating a new contact.
+         * Calls openEditContactModal() with no parameters.
+         */
+        function openCreateModal() {
+           openEditContactModal();
+        } 
+        
+        /**
+         * Opens the modal for editing or creating a contact.
+         * Sets the modal title based on whether a contact ID is provided.
+         * Shows a loading spinner while fetching contact data via AJAX.
+         * Populates the modal with the contact form on success.
+         * Logs an error to the console on failure.
+         * 
+         * param {number} contactId - The ID of the contact to edit (optional).
+         */
+        function openEditContactModal(contactId) {
+            $("#editContactModalLabel").text(contactId ? "Edit Contact" : "Create Contact");
+            $("#editContactModal").modal('toggle');
+            
+            const loader = '<div class="d-flex align-items-center justify-content-center"><div class="spinner-border" role="status"></div><span class="sr-only p-1">Loading...</span></div>'
+            $('#editContactModal .modal-body').html(loader);
+            
+            $.ajax({
+                url: `@Url.Action("Edit", "Contacts")/${contactId}`,
+                type: 'GET',
+                success: function (data) {
+                    $('#editContactModal .modal-body').html(data);
+                    setupMap();
+                },
+                error: function (error) {
+                    console.error('Error deleting contact:', error);
+                }
+            });
+        }
+        
+        /**
+         * Clears the contacts table body.
+         * Displays a loading spinner in the table while contacts are being fetched.
+         */
+        function showLoaderInTable() {
+            const tableBody = $('#contactsTableBody');
+            tableBody.empty(); // Clear any existing rows
+            const loadingRow = `
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="spinner-border" role="status"></div>
+                    <span class="sr-only">Loading...</span>
+                </td>
+            </tr>`;
+            tableBody.append(loadingRow);
+        }
+        
+        /**
+         * Shows a loading spinner in the contacts table.
+         * Fetches filtered contact data via AJAX.
+         * Populates the contacts table with the fetched data on success.
+         * Logs an error to the console on failure.
+         */
+        function loadContacts() {
+            showLoaderInTable();
+            const firstNameFilterValue = $("#firstNameFilter").val();
+            const lastNameFilterValue = $("#lastNameFilter").val();
+            const emailFilterValue = $("#emailFilter").val();
+            const phoneNumberValue = $("#phoneNumberFilter").val();
+            const url = '@Url.Action("GetContacts", "Contacts")' +`?firstName=${firstNameFilterValue}&lastName=${lastNameFilterValue}&email=${emailFilterValue}&phoneNumber=${phoneNumberValue}`;
+            $.ajax({
+                url: url ,
+                type: 'GET',
+                success: function (result) {
+                    const tableBody = $('#contactsTableBody');
+                    tableBody.empty(); // Clear any existing rows
+                    const data = result.data;
+                    if (data.length) {
+                        $.each(data, function (index, contact) {
+                            const row = `
+                                <tr>
+                                    <td>${contact.firstName}</td>
+                                    <td>${contact.lastName}</td>
+                                    <td>${contact.phoneNumber}</td>
+                                    <td>${contact.email}</td>
+                                    <td>${contact.description ?? ''}</td>
+                                    <td>
+                                        <button onclick="openEditContactModal(${contact.id})" class="btn btn-secondary">Edit</button>
+                                        <button onclick="showDeleteContactModal(${contact.id}, '${contact.firstName + ' ' + contact.lastName}')" class="btn btn-danger">Delete</button>
+                                    </td>
+                                </tr>`;
+                            tableBody.append(row);
+                        });
+                    } else {
+                        const emptyRow = '<tr><td colspan="6" style="text-align: center;">No data to display.</td></tr>';
+                        tableBody.append(emptyRow);
+                    }
+                },
+                error: function (error) {
+                    console.error('Error fetching contacts:', error);
+                }
+            });
+        }
+        
+        /**
+         * Opens the modal to confirm contact deletion.
+         * Displays a confirmation message with the contact's full name.
+         * Stores the contact ID in the modal's data attribute.
+         * 
+         * param {number} id - The ID of the contact to delete.
+         * param {string} contactFullName - The full name of the contact.
+         */
+        function showDeleteContactModal(id, contactFullName) {
+            const deleteModal = $('#deleteModal');
+            $('#delete-modal-body').text(`Are you sure you want to delete contact ${contactFullName}?`);
+            $(deleteModal).data.id = id;
+            deleteModal.modal('toggle');
+        }
+        
+        /**
+         * Retrieves the contact ID from the delete modal's data attribute.
+         * Sends a DELETE request to remove the contact via AJAX.
+         * Reloads the contacts on success.
+         * Logs an error to the console on failure.
+         */
+        function deleteContact() {
+            const deleteModal = $('#deleteModal');            
+            const contactId = deleteModal.data.id;
+            deleteModal.modal('toggle');
+            $.ajax({
+                url: `@Url.Action("Delete", "Contacts")/${contactId}`,
+                type: 'DELETE',
+                success: function () {
+                    loadContacts();
+                },
+                error: function (error) {
+                    console.error('Error deleting contact:', error);
+                }
+            });
+        }
+        
+        /**
+         * Calls setupMap() to update the map when the latitude or longitude changes.
+         */
+        function latitudeAndLongitudeChanged(){
+            setupMap();
+        }
+        
+        /**
+         * Set up new map instance and remove old if needed. 
+         */
+        function setupMap() {
+            const latitude = Number($("#AddressLatitude").val());
+            const longitude = Number($("#AddressLongitude").val());            
+            if (map) {
+                map.off();
+                map.remove();
+                map = null;
+            }
+            if (latitude && longitude) {
+                map = L.map('address-map').setView([latitude, longitude], 13);
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                L.marker([latitude, longitude]).addTo(map);  
+            }       
+        }
+        
+    </script>
+}
